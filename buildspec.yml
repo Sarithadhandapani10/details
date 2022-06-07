@@ -1,0 +1,33 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      docker: 18
+  pre_build:
+    commands:
+    - echo Logging in to Amazon ECR...
+    - aws --version
+    - echo Siva*5pani | docker login --username saritha10 --password-stdin
+    - TAG="$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)"
+    - IMAGE_URI=156962844638.dkr.ecr.us-east-1.amazonaws.com/pensionerdetail_839818:${TAG}
+    
+  build:
+    commands:
+    - echo Build started on `date`
+    - echo Building Java
+    - cd PensionerDetail-Microservice
+    - mvn compile
+    - mvn package -DskipTests
+    - echo Building the docker image..
+    - docker build -t pensionerdetail_839818 .
+    - docker tag pensionerdetail_839818:latest 156962844638.dkr.ecr.ap-southeast-1.amazonaws.com/pensionerdetail_839818:latest
+  post_build:
+    commands:
+    - echo Build completed on `date`
+    - echo Pushing docker image
+    - docker push 156962844638.dkr.ecr.ap-southeast-1.amazonaws.com/pensionerdetail_839818:latest
+    - echo Writting definition file
+    - printf '[{"name":"saritha-pms-detailcontainer","imageUri":"%s"}]' 156962844638.dkr.ecr.ap-southeast-1.amazonaws.com/pensionerdetail_839818:latest > imagedefinitions.json
+artifacts:
+  files:
+  - PensionerDetail-Microservice/imagedefinitions.json
